@@ -170,11 +170,11 @@ print("[*] Installing dependencies...")
 # 3. Start the server in the background
 print("[*] Starting Kaggle Cloud Drive...")
 
-# Run with default settings (--lang vi --username admin --password auto)
+# Run with default settings (--lang en --username admin --password auto)
 # !python start_server.py
 
 # Optional: --lang vi|en|zh, --username <user>, --password <pass>
-# !python start_server.py --lang vi --username admin --password your_password
+# !python start_server.py --lang en --username admin --password your_password
 
 # Keep the notebook cell attached to the server and stream logs in real time:
 !python start_server.py --foreground
@@ -221,7 +221,7 @@ Both `run.py` and `start_server.py` accept the following command-line arguments:
 
 | Flag | Short | Default | Allowed Values | Description |
 |---|---|---|---|---|
-| `--lang` | `-l` | `vi` | `vi`, `en`, `zh` | Default UI language upon launch |
+| `--lang` | `-l` | `en` | `vi`, `en`, `zh` | Default UI language upon launch |
 | `--username` | `-u` | `admin` | String | Admin account username |
 | `--password` | `-p` | *(Auto-generated 16 chars)* | String | Admin account password |
 | `--port` | | `8000` | Integer (e.g. `8080`) | TCP port for FastAPI service |
@@ -240,7 +240,7 @@ You can configure options through a `.env` file or export them before running:
 
 | Variable | Default | Description |
 |---|---|---|
-| `KAGGLE_DRIVE_LANG` | `vi` | Default interface language (`vi`, `en`, `zh`) |
+| `KAGGLE_DRIVE_LANG` | `en` | Default interface language (`vi`, `en`, `zh`) |
 | `KAGGLE_DRIVE_USERNAME` | `admin` | Admin username |
 | `KAGGLE_DRIVE_PASSWORD` | *(Auto-generated)* | Admin password |
 | `KAGGLE_DRIVE_ROOT` | `/` | Target managed root directory |

@@ -68,7 +68,7 @@ class Settings:
         self.MAX_TEXT_PREVIEW_SIZE = _positive_int_env("KAGGLE_DRIVE_MAX_TEXT_PREVIEW_BYTES", 10 * 1024**2)
 
         # 6. Localization
-        self.DEFAULT_LANG = os.getenv("KAGGLE_DRIVE_LANG", "vi").lower()
+        self.DEFAULT_LANG = os.getenv("KAGGLE_DRIVE_LANG", "en").lower()
         if self.DEFAULT_LANG not in ("vi", "en", "zh"):
             self.DEFAULT_LANG = "vi"
 
