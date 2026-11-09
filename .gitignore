@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Cloudflared binaries
+cloudflared
+cloudflared.exe
+cloudflared*
+
+# Environment & Sessions
+.env
+*.log
+*.pid
+server.pid
+
+# Workspace storage (when testing locally)
+workspace_data/
+workspace/
+.cloudflared_bin/
+/kaggle/
+
