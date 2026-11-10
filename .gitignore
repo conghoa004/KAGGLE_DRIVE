@@ -38,5 +38,6 @@ server.pid
 workspace_data/
 workspace/
 .cloudflared_bin/
+.code_server_bin/
 /kaggle/
 

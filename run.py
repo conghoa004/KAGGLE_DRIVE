@@ -26,6 +26,8 @@ def ensure_dependencies():
         "pydantic>=2.9.0": "pydantic",
         "python-dotenv>=1.0.1": "dotenv",
         "psutil>=6.0.0": "psutil",
+        "httpx>=0.27.0": "httpx",
+        "websockets>=14.0": "websockets",
     }
     missing_packages = []
     for pkg_spec, mod_name in package_specs.items():
@@ -239,6 +241,17 @@ def main():
 
     print("[✓] FastAPI server is healthy and responding.")
 
+    from app.services.code_server_service import code_server_service
+    if settings.CODE_SERVER_ENABLED:
+        try:
+            code_server_service.start()
+            print(f"[OK] VS Code Web is ready at http://127.0.0.1:{settings.PORT}/ide/")
+        except Exception as e:
+            print(f"[!] VS Code Web could not start: {e}")
+            print("[*] Kaggle Cloud Drive will continue without the IDE.")
+    else:
+        print("[*] VS Code Web is disabled (ENABLE_CODE_SERVER=false).")
+
     local_url = f"http://127.0.0.1:{settings.PORT}"
     public_url = None
     print(f"LOCAL_READY {local_url}", flush=True)
@@ -276,6 +289,7 @@ def main():
     def handle_shutdown(signum, frame):
         print("\n[*] Shutting down Kaggle Cloud Drive...")
         tunnel_service.stop_tunnel()
+        code_server_service.stop()
         server.should_exit = True
         sys.exit(0)
 

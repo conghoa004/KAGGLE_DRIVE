@@ -59,6 +59,7 @@
 - Supports 4-space `Tab` indentation, dynamic font size adjustment (`- 14px +`), and toggleable line wrap.
 - Real-time status bar displaying line count, file size, cursor coordinates (Line, Column), and UTF-8 encoding.
 - Dirty check confirmation prompt prevents accidental exit with unsaved changes.
+- Full VS Code is available in the browser at /ide/, using the same authenticated session and managed root directory.
 
 ### 6. 💻 Integrated Kaggle Terminal Console
 - Interactive Linux shell backed by a PTY and authenticated WebSocket.
@@ -246,6 +247,10 @@ You can configure options through a `.env` file or export them before running:
 | `KAGGLE_DRIVE_ROOT` | `/` | Target managed root directory |
 | `KAGGLE_DRIVE_HOST` | `127.0.0.1` | Server host |
 | `KAGGLE_DRIVE_PORT` | `8000` | Server port |
+| `ENABLE_CODE_SERVER` | `true` | Enable the full VS Code browser IDE on Linux |
+| `CODE_SERVER_PORT` | `8081` | Private local port used by code-server |
+| `CODE_SERVER_VERSION` | `4.143.1` | code-server release downloaded on first start |
+| `CODE_SERVER_BIN` | *(Auto-detected)* | Optional path to an existing code-server executable |
 | `ENABLE_CLOUDFLARE_TUNNEL` | `true` | Enable or disable automatic HTTPS tunnel |
 | `CLOUDFLARE_TUNNEL_TOKEN` | *(Empty)* | Custom Cloudflare Tunnel token |
 | `KAGGLE_DRIVE_SECRET_KEY` | *(Auto-generated)* | Session encryption secret key |
@@ -273,6 +278,7 @@ python -m unittest discover tests
 2. **Zip Slip Defense**: Archive extraction inspects every entry, sanitizes target paths, and rejects any malicious relative prefixes (`../`).
 3. **Timing-Attack Resistance**: Compares user credentials using `secrets.compare_digest` to prevent side-channel timing analysis.
 4. **HTTPS Encryption**: Traffic through Cloudflare Tunnel is encrypted end-to-end with 256-bit SSL/TLS certificates.
+5. **VS Code Web**: code-server listens only on loopback; the /ide/ HTTP and WebSocket proxy requires the app's authenticated session.
 
 ---
 

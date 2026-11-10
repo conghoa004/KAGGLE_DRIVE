@@ -37,6 +37,13 @@ class Settings:
         self.HOST = os.getenv("KAGGLE_DRIVE_HOST", "127.0.0.1")
         self.PORT = int(os.getenv("KAGGLE_DRIVE_PORT", "8000"))
 
+        # 2.1. Browser VS Code (code-server)
+        self.CODE_SERVER_ENABLED = os.getenv("ENABLE_CODE_SERVER", "true").lower() in ("true", "1", "yes")
+        self.CODE_SERVER_PORT = _positive_int_env("CODE_SERVER_PORT", 8081)
+        self.CODE_SERVER_VERSION = os.getenv("CODE_SERVER_VERSION", "4.143.1").strip()
+        self.CODE_SERVER_BIN = os.getenv("CODE_SERVER_BIN", "").strip()
+        self.CODE_SERVER_DIR = Path(__file__).resolve().parent.parent / ".code_server_bin"
+
         # 3. Security & Credentials
         self.USERNAME = os.getenv("KAGGLE_DRIVE_USERNAME", "admin")
         self.PASSWORD = os.getenv("KAGGLE_DRIVE_PASSWORD") or secrets.token_urlsafe(16)
