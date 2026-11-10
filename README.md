@@ -7,8 +7,7 @@
 [![i18n](https://img.shields.io/badge/i18n-VI%20|%20EN%20|%20ZH-blue?style=flat-square&logo=google-translate&logoColor=white)](#-1-internationalization-i18n)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-> **Kaggle Cloud Drive** is a high-performance, modern Web File Manager & Server designed specifically for the **Kaggle Notebook** environment.  
-> Transform your `/` directory into a full-featured cloud file manager (similar to Google Drive / Finder), featuring an integrated web code editor, an interactive Kaggle Terminal console, real-time hardware monitoring (CPU, GPU, RAM, Disk), and automated secure public HTTPS tunneling via **Cloudflare Tunnel**.
+> **Kaggle Cloud Drive** is a web file manager designed for **Kaggle Notebooks** and local development. It manages the configured root directory and includes a browser code editor, an optional VS Code Web IDE powered by code-server, a Linux terminal, hardware monitoring, and an optional public tunnel through **Cloudflare Tunnel**.
 
 ---
 
@@ -16,8 +15,8 @@
 
 ### 1. 🌍 Internationalization (i18n)
 - Full support for **3 languages**:
-  - 🇻🇳 **Vietnamese (`vi`)** (Default)
-  - 🇺🇸 **English (`en`)**
+  - 🇻🇳 **Vietnamese (`vi`)**
+  - 🇺🇸 **English (`en`)** (Default)
   - 🇨🇳 **Simplified Chinese (`zh`)**
 - Seamless language switching:
   - **Login Screen**: Quick-switch buttons 🇻🇳 VI | 🇺🇸 EN | 🇨🇳 ZH located directly below the login form.
@@ -59,10 +58,11 @@
 - Supports 4-space `Tab` indentation, dynamic font size adjustment (`- 14px +`), and toggleable line wrap.
 - Real-time status bar displaying line count, file size, cursor coordinates (Line, Column), and UTF-8 encoding.
 - Dirty check confirmation prompt prevents accidental exit with unsaved changes.
-- Full VS Code is available in the browser at /ide/, using the same authenticated session and managed root directory.
+- The full VS Code Web IDE opens at `/ide/` in a new tab from the top bar or sidebar. It uses the same authenticated session and opens the configured managed root directory.
+- On Linux, when `CODE_SERVER_BIN` is unset and no `code-server` executable is on `PATH`, code-server is downloaded on first start into `.code_server_bin/`. Internet access is needed for this download; if startup fails, the file manager continues to run.
 
 ### 6. 💻 Integrated Kaggle Terminal Console
-- Interactive Linux shell backed by a PTY and authenticated WebSocket.
+- Interactive Linux shell backed by a PTY and authenticated WebSocket. Requires a Linux runtime such as Kaggle.
 - Live ANSI colors, progress output, persistent `cd`, shell history, and keyboard input such as Ctrl+C.
 - Supports interactive terminal programs when available in the Kaggle environment.
 - xterm.js display with quick commands, clear, copy, minimize, and restore controls.
@@ -78,9 +78,9 @@
 - **Top Largest Files**: Lists the largest space-consuming files with quick-preview shortcuts for rapid disk cleanups.
 
 ### 8. 🔒 Security & Public HTTPS Tunneling
-- **Cloudflare Tunnel (`trycloudflare.com`)**: Automatically installs and executes the Cloudflared binary, exposing a secure public HTTPS endpoint without port forwarding, dynamic DNS, or Cloudflare account setup.
+- **Cloudflare Tunnel**: Automatically downloads and runs Cloudflared when needed. Quick tunnels use a `trycloudflare.com` HTTPS address without manual port forwarding or a Cloudflare account; named tunnels can be configured with a token.
 - **Path Traversal & Zip Slip Prevention**: Strictly validates file paths against `ROOT_DIR`, blocking directory escape attacks (`../../`).
-- **Timing-Attack Resilient Authentication**: Secures sessions with encrypted cookies and verifies credentials using `secrets.compare_digest`.
+- **Authentication**: Verifies credentials using `secrets.compare_digest`. Session cookies are signed (not encrypted) and have a configurable lifetime.
 
 ---
 
@@ -98,13 +98,15 @@ kaggle_drive/
 │   │   ├── file_service.py        # File operations: upload, download, zip, extract, duplicate
 │   │   ├── system_service.py      # Hardware metrics: Disk, RAM, CPU, NVIDIA GPU
 │   │   ├── pty_terminal_service.py # Interactive Linux PTY session management
+│   │   ├── code_server_service.py # Private code-server process and Linux installation
 │   │   └── tunnel_service.py      # Automated Cloudflare Tunnel management
 │   ├── routes/
 │   │   ├── __init__.py
 │   │   ├── auth_routes.py         # Authentication endpoints: /login, /logout, /me
 │   │   ├── file_routes.py         # File management endpoints: CRUD, stream, chunk upload, zip, url
 │   │   ├── system_routes.py       # System metrics (/stats) and terminal (/terminal)
-│   │   └── view_routes.py         # SPA HTML route and public config (/config)
+│   │   ├── ide_routes.py          # Authenticated HTTP and WebSocket proxy for /ide/
+│   │   └── view_routes.py         # SPA HTML route and public config (/api/config)
 │   ├── static/
 │   │   ├── css/
 │   │   │   └── main.css           # Modern stylesheet, custom scrollbars, animations
@@ -137,6 +139,7 @@ kaggle_drive/
 
 > [!IMPORTANT]
 > **Kaggle Requirement**: Ensure that **Internet** is toggled **ON** in your Kaggle Notebook settings (**Notebook Settings** -> **Internet** -> **Internet on**). Without internet access, Cloudflare Tunnel cannot connect to generate your public URL.
+> Internet is also needed on first launch to download Cloudflared and, when enabled and not already installed, code-server. The file manager itself can continue in local-only mode if the tunnel or IDE cannot start.
 
 ---
 
@@ -171,7 +174,7 @@ print("[*] Installing dependencies...")
 # 3. Start the server in the background
 print("[*] Starting Kaggle Cloud Drive...")
 
-# Run with default settings (--lang en --username admin --password auto)
+# Defaults: English UI, username admin, and a generated password
 # !python start_server.py
 
 # Optional: --lang vi|en|zh, --username <user>, --password <pass>
@@ -181,9 +184,9 @@ print("[*] Starting Kaggle Cloud Drive...")
 !python start_server.py --foreground
 ```
 
-In foreground mode, the notebook cell remains active while the server is running. Interrupt the cell to stop the server.
+In foreground mode, the notebook cell remains attached while the server runs; interrupt the cell to stop it. The app prints the login credentials and local/public URLs during startup, and writes output to `server.log`. code-server output is written to `.code_server_bin/code-server.log`.
 
-Running start_server.py again without --foreground prints the active server's URLs and credentials, then exits. With --foreground, it attaches to that server's log; pressing Ctrl+C stops the existing server without restarting it.
+Running `start_server.py` again without `--foreground` prints the active server's URLs and credentials, then exits. With `--foreground`, it attaches to that server's log; pressing Ctrl+C stops the existing server.
 
 #### Stopping the Background Server:
 To stop the server at any time, run in a new notebook cell:
@@ -224,14 +227,14 @@ Both `run.py` and `start_server.py` accept the following command-line arguments:
 |---|---|---|---|---|
 | `--lang` | `-l` | `en` | `vi`, `en`, `zh` | Default UI language upon launch |
 | `--username` | `-u` | `admin` | String | Admin account username |
-| `--password` | `-p` | *(Auto-generated 16 chars)* | String | Admin account password |
+| `--password` | `-p` | *(Auto-generated if omitted)* | String | Admin account password |
 | `--port` | | `8000` | Integer (e.g. `8080`) | TCP port for FastAPI service |
 | `--host` | | `127.0.0.1` | IP address | Server listen host |
-| `--root` | | `/` or `./workspace` | Directory path | Target root directory to manage |
+| `--root` | | Configured root (`/` by default) | Directory path | Target root directory to manage |
 | `--no-tunnel` | | `False` | Flag | Disables Cloudflare Tunnel (local only) |
 | `--token` | | `None` | String | Cloudflare Named Tunnel token for custom domains |
 | `--foreground` *(only `start_server.py`)* | | `False` | Flag | Keep the server attached to the current terminal and stream its output |
-| `--wait` *(only `start_server.py`)* | | `30` | Seconds (integer) | Max seconds to wait for tunnel ready before printing log |
+| `--wait` *(only `start_server.py`)* | | `300` | Seconds (integer) | Max seconds to wait for startup before printing the log |
 
 ---
 
@@ -244,7 +247,8 @@ You can configure options through a `.env` file or export them before running:
 | `KAGGLE_DRIVE_LANG` | `en` | Default interface language (`vi`, `en`, `zh`) |
 | `KAGGLE_DRIVE_USERNAME` | `admin` | Admin username |
 | `KAGGLE_DRIVE_PASSWORD` | *(Auto-generated)* | Admin password |
-| `KAGGLE_DRIVE_ROOT` | `/` | Target managed root directory |
+| `KAGGLE_DRIVE_ROOT` | `/` | Managed root directory; set a local path for local development |
+| `SESSION_MAX_AGE` | `86400` | Session lifetime in seconds (24 hours) |
 | `KAGGLE_DRIVE_HOST` | `127.0.0.1` | Server host |
 | `KAGGLE_DRIVE_PORT` | `8000` | Server port |
 | `ENABLE_CODE_SERVER` | `true` | Enable the full VS Code browser IDE on Linux |
@@ -253,7 +257,14 @@ You can configure options through a `.env` file or export them before running:
 | `CODE_SERVER_BIN` | *(Auto-detected)* | Optional path to an existing code-server executable |
 | `ENABLE_CLOUDFLARE_TUNNEL` | `true` | Enable or disable automatic HTTPS tunnel |
 | `CLOUDFLARE_TUNNEL_TOKEN` | *(Empty)* | Custom Cloudflare Tunnel token |
-| `KAGGLE_DRIVE_SECRET_KEY` | *(Auto-generated)* | Session encryption secret key |
+| `KAGGLE_DRIVE_SECRET_KEY` | *(Auto-generated)* | Secret used to sign session cookies |
+| `CLOUDFLARE_TUNNEL_URL` | *(Empty)* | Optional HTTPS URL to display when using a named tunnel token |
+| `KAGGLE_DRIVE_MAX_UPLOAD_BYTES` | `5368709120` | Maximum upload size in bytes (5 GiB) |
+| `KAGGLE_DRIVE_MAX_BINARY_SAVE_BYTES` | `104857600` | Maximum binary editor save size in bytes (100 MiB) |
+| `KAGGLE_DRIVE_MAX_TEXT_PREVIEW_BYTES` | `10485760` | Maximum text preview size in bytes (10 MiB) |
+| `KAGGLE_DRIVE_MAX_REMOTE_DOWNLOAD_BYTES` | `5368709120` | Maximum remote URL download size in bytes (5 GiB) |
+| `KAGGLE_DRIVE_MAX_ARCHIVE_MEMBERS` | `100000` | Maximum number of archive entries to extract |
+| `KAGGLE_DRIVE_MAX_ARCHIVE_UNPACKED_BYTES` | `10737418240` | Maximum total extracted archive size in bytes (10 GiB) |
 
 ---
 
@@ -277,8 +288,8 @@ python -m unittest discover tests
 1. **Path Traversal Protection**: All user paths submitted via API parameters are sanitized with `get_safe_path()`. If the resolved path lies outside `ROOT_DIR`, a `403 Forbidden` response is returned immediately.
 2. **Zip Slip Defense**: Archive extraction inspects every entry, sanitizes target paths, and rejects any malicious relative prefixes (`../`).
 3. **Timing-Attack Resistance**: Compares user credentials using `secrets.compare_digest` to prevent side-channel timing analysis.
-4. **HTTPS Encryption**: Traffic through Cloudflare Tunnel is encrypted end-to-end with 256-bit SSL/TLS certificates.
-5. **VS Code Web**: code-server listens only on loopback; the /ide/ HTTP and WebSocket proxy requires the app's authenticated session.
+4. **HTTPS via Cloudflare**: Quick tunnel URLs use HTTPS between the browser and Cloudflare. The app and code-server communicate locally over loopback.
+5. **VS Code Web**: code-server listens only on loopback; the `/ide/` HTTP and WebSocket proxy requires the app's authenticated session.
 
 ---
 
@@ -289,7 +300,7 @@ python -m unittest discover tests
 
 - Check that **Internet** is enabled in your Kaggle Notebook settings (**Settings** -> **Internet** -> **Internet on**).
 - Ensure the `cloudflared` binary has execute permissions (automatically handled via `chmod +x`).
-- Inspect the log file: `!cat /kaggle/working/KAGGLE_DRIVE/server.log`.
+- Inspect the log file: `!cat /kaggle/working/kaggle_drive/server.log`.
 </details>
 
 <details>
@@ -300,7 +311,15 @@ python -m unittest discover tests
 </details>
 
 <details>
-<summary><b>3. Can I download large model checkpoints (>10 GB)?</b></summary>
+<summary><b>3. Why is VS Code Web unavailable?</b></summary>
+
+- VS Code Web is enabled by default on Linux. Check `server.log` for the `[!] VS Code Web could not start` message and `.code_server_bin/code-server.log` for code-server output.
+- The first automatic installation needs Internet access. Confirm the runtime is Linux and has a supported architecture; on Windows, install code-server separately and set `CODE_SERVER_BIN` (for example, through WSL).
+- Set `ENABLE_CODE_SERVER=false` to disable the IDE. The file manager can still start if code-server fails.
+</details>
+
+<details>
+<summary><b>4. Can I download large model checkpoints (>10 GB)?</summary>
 
 - Uploads use 1MB chunked streaming for memory efficiency and stability.
 - To transfer large models or datasets into Kaggle, use the **"Download from URL"** feature in the web UI. Kaggle will download files directly over its high-speed datacenter connection.
