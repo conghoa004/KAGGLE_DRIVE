@@ -1,4 +1,5 @@
 import platform
+import posixpath
 import re
 import shutil
 import socket
@@ -6,7 +7,7 @@ import subprocess
 import tarfile
 import time
 import urllib.request
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from app.config import settings
 
@@ -31,12 +32,42 @@ class CodeServerService:
 
     def _validate_archive(self, archive, destination):
         root = destination.resolve()
-        for member in archive.getmembers():
-            name = Path(member.name)
-            target = (destination / name).resolve()
-            if name.is_absolute() or ".." in name.parts or (target != root and root not in target.parents):
+        members = archive.getmembers()
+        archive_roots = {
+            PurePosixPath(member.name).parts[0]
+            for member in members
+            if PurePosixPath(member.name).parts
+        }
+        if len(archive_roots) != 1:
+            raise RuntimeError("The code-server archive has an unexpected directory structure.")
+        archive_root = next(iter(archive_roots))
+
+        for member in members:
+            name = PurePosixPath(member.name)
+            target = (destination / Path(*name.parts)).resolve()
+            if (
+                name.is_absolute()
+                or not name.parts
+                or ".." in name.parts
+                or name.parts[0] != archive_root
+                or (target != root and root not in target.parents)
+            ):
                 raise RuntimeError("The code-server archive contains an unsafe path.")
-            if not (member.isdir() or member.isfile()):
+            if member.issym() or member.islnk():
+                link = PurePosixPath(member.linkname)
+                if link.is_absolute():
+                    raise RuntimeError("The code-server archive contains an unsafe link.")
+                if member.issym():
+                    link_target = PurePosixPath(posixpath.normpath(str(name.parent / link)))
+                else:
+                    link_target = PurePosixPath(posixpath.normpath(str(link)))
+                if (
+                    not link_target.parts
+                    or link_target.parts[0] != archive_root
+                    or ".." in link_target.parts
+                ):
+                    raise RuntimeError("The code-server archive contains a link outside its package.")
+            elif not (member.isdir() or member.isfile()):
                 raise RuntimeError("The code-server archive contains an unsupported file type.")
 
     def ensure_binary(self):
@@ -86,7 +117,10 @@ class CodeServerService:
 
         with tarfile.open(archive_path, "r:gz") as archive:
             self._validate_archive(archive, install_root)
-            archive.extractall(install_root)
+            if hasattr(tarfile, "data_filter"):
+                archive.extractall(install_root, filter="data")
+            else:
+                archive.extractall(install_root)
         archive_path.unlink(missing_ok=True)
         if not binary.is_file():
             raise RuntimeError("The downloaded code-server package did not contain its executable.")
